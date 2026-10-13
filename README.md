@@ -6,20 +6,28 @@ GitHub Actions builds the pack (`.github/workflows/build-and-publish.yml`).
 Pull requests and pushes to `main` build the adapter image, run `tests/`
 inside it, scan it with Trivy and boot it. Nothing is published.
 
-To release, bump `version` in `manifest.txt`, merge to `main`, then:
+To release, merge to `main`, then:
 
 ```
 git tag v1.3.1 && git push origin v1.3.1
 ```
+
+The tag sets the version. The workflow writes it into `manifest.txt` on the
+runner before `mp-build`, so there is nothing to bump before tagging; the
+stamped file is never committed. The committed `manifest.txt` stays at the
+last released version, which is what a hand-run `mp-build` uses.
 
 The workflow runs `mp-build` against `ghcr.io/gillaspy/cluster-perf-risk`,
 scans the pushed image, signs the image and the pak with cosign (keyless: no
 keys or secrets to manage), attests both with GitHub build provenance, tags
 the image `1.3.1`, and creates a GitHub Release with the pak, its signature
 bundle (`.pak.sigstore.json`) and `SHA256SUMS`. A `v1.3.1-rc.1` tag publishes
-a prerelease and may come from any branch. A version that already exists in
-GHCR is refused; release a new patch version instead. `config.json` still
-points local `mp-build` runs at Docker Hub; the workflow does not use it.
+a prerelease and may come from any branch. Its pak carries version `1.3.1`
+(`ClusterPerfRisk_1.3.1.pak`); the Release is named `v1.3.1-rc.1` and the image is
+tagged `1.3.1-rc.1`.
+A version that already exists in GHCR is refused; release a new patch version
+instead. `config.json` still points local `mp-build` runs at Docker Hub; the
+workflow does not use it.
 
 One-time setup: if the first release stops at the anonymous pull check, the
 new GHCR package was created private. Make it public (package settings,
